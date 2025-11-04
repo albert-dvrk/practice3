@@ -33,8 +33,11 @@ jobs:
         
         echo "Checking .env file:"
         Get-ChildItem .env
+        
+        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' } | Out-File -FilePath .env.masked -Encoding utf8
+        
         echo "File content (masked):"
-        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
+        Get-Content .env.masked
 
     - name: Deploy with Docker Compose
       run: |
@@ -101,7 +104,7 @@ jobs:
       with:
         name: deployment-files
         path: |
-          .env
+          .env.masked
           docker-compose.yml
           test-report.md
         retention-days: 30
