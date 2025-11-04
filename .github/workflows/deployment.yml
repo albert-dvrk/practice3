@@ -53,26 +53,20 @@ jobs:
     - name: Test application and database
       run: |
         echo "Testing application and database connection..."
-        
-        # Проверяем подключение к БД через приложение
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
+            $response = Invoke-WebRequest -Uri "http://localhost:8000/" -TimeoutSec 10
             echo "✅ Application database connection working"
         } catch {
             echo "❌ Application database connection failed"
             exit 1
-        } # +1 балл (Критерий 4)
+        }
     - name: Test data consistency
       run: |
         echo "Testing data consistency..."
-        
-        # Упрощенная проверка - оба сервиса работают
         try {
-            # Проверяем что БД контейнер работает
             $dbStatus = docker-compose ps db --format "json" | ConvertFrom-Json
             echo "✅ Database container is running"
             
-            # Проверяем что веб-приложение работает
             $webResponse = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
             echo "✅ Web application is running"
             
@@ -80,7 +74,7 @@ jobs:
         } catch {
             echo "❌ Data consistency test failed"
             exit 1
-        } # +1 балл (Критерий 4)
+        }
     - name: Save artifacts
       uses: actions/upload-artifact@v4
       with:
