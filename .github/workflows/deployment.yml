@@ -33,19 +33,14 @@ jobs:
         
         echo "Checking .env file:"
         Get-ChildItem .env
-        
-        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' } | Out-File -FilePath .env.masked -Encoding utf8
-        
         echo "File content (masked):"
-        Get-Content .env.masked
-
+        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
     - name: Deploy with Docker Compose
       run: |
         docker-compose down
         docker-compose up -d
         Start-Sleep -Seconds 30
         docker-compose ps
-
     - name: Check containers
       run: |
         $status = docker-compose ps --services --filter "status=running"
@@ -55,7 +50,6 @@ jobs:
           "No containers running"
           exit 1
         }
-
     - name: Test application and database
       run: |
         echo "Testing application and database connection..."
@@ -66,7 +60,6 @@ jobs:
             echo "Application database connection failed"
             exit 1
         }
-
     - name: Test data consistency
       run: |
         echo "Testing data consistency..."
@@ -82,60 +75,33 @@ jobs:
             echo "Data consistency test failed"
             exit 1
         }
-
-    - name: Save logs
-      run: |
-        docker-compose logs > logs.txt
-        docker ps -a > containers.txt
-        docker images > images.txt
-
-    - name: Create test report
-      run: |
-        "# Test Report" | Out-File test-report.md
-        "- Date: $(Get-Date)" | Out-File test-report.md -Append
-        "- Status: Success" | Out-File test-report.md -Append
-
-    - name: Debug - check files before upload
-      run: |
-        echo "Current directory: $(Get-Location)"
-        echo "Files in current directory:"
-        Get-ChildItem
-        echo "Files in project directory:"
-        Get-ChildItem "C:\Users\alber\_work\practice3\practice3\"
-        
-    - name: Copy masked file to workspace
-      run: |
-        # Копируем .env.masked в текущую рабочую директорию
-        $sourcePath = "C:\Users\alber\_work\practice3\practice3\.env.masked"
-        $destPath = ".\.env.masked"
-        if (Test-Path $sourcePath) {
-            Copy-Item $sourcePath $destPath -Force
-            echo "File copied successfully"
-        } else {
-            echo "ERROR: .env.masked not found at $sourcePath"
-            Get-ChildItem "C:\Users\alber\_work\practice3\practice3\" -Recurse | Where-Object { $_.Name -like "*.masked*" }
-        }
-
-    - name: Verify files for artifacts
-      run: |
-        echo "Files ready for upload:"
-        Get-ChildItem .env.masked, docker-compose.yml, test-report.md -ErrorAction SilentlyContinue | Format-Table Name, Length
-
     - name: Save artifacts
       uses: actions/upload-artifact@v4
       with:
         name: deployment-files
         path: |
           C:\Users\alber\_work\practice3\practice3\.env.masked
-          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
-          C:\Users\alber\_work\practice3\practice3\test-report.md
+          test-report.md
+          deployment-logs.txt
         retention-days: 30
 
+    - name: Save logs
+      run: |
+        docker-compose logs > logs.txt
+        docker ps -a > containers.txt
+        docker images > images.txt
+    - name: Create test report
+      run: |
+        "# Test Report" | Out-File test-report.md
+        "- Date: $(Get-Date)" | Out-File test-report.md -Append
+        "- Status: Success" | Out-File test-report.md -Append
     - name: Upload logs
       uses: actions/upload-artifact@v4
       with:
         name: docker-logs
         path: |
-          C:\Users\alber\_work\practice3\practice3\logs.txt
-          C:\Users\alber\_work\practice3\practice3\containers.txt
+          logs.txt
+          containers.txt
+          C:\Users\alber\_work\practice3\practice3\.env.masked
+          C:\Users\alber\_work\practice3\practice3\.env
         retention-days: 30
