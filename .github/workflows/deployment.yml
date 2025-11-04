@@ -1,75 +1,82 @@
-name: Full Stack Application Deployment Test
+name: Deploy to Server
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 env:
   COMPOSE_PROJECT_NAME: myapp
 
 jobs:
-  deploy-and-test:
-    runs-on: self-hosted
-
+  deploy:
+    runs-on: ubuntu-latest
+    
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Create .env file
+      uses: actions/checkout@v3
+      
+    - name: Create .env file from secrets
       run: |
-        echo "Current directory:"
-        Get-Location
-        
-        "DB_HOST=${{ secrets.DB_HOST }}" | Out-File -FilePath .env -Encoding utf8
-        "DB_PORT=${{ secrets.DB_PORT }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "DB_NAME=${{ secrets.DB_NAME }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "DB_USER=${{ secrets.DB_USER }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "APP_PORT=${{ secrets.APP_PORT }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "APP_SECRET=${{ secrets.APP_SECRET }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "API_KEY=${{ secrets.API_KEY }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        "COMPOSE_PROJECT_NAME=${{ env.COMPOSE_PROJECT_NAME }}" | Out-File -FilePath .env -Encoding utf8 -Append
-        
-        echo "Checking .env file:"
-        Get-ChildItem .env
-        echo "File content (masked):"
-        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
+        echo "Creating .env file from GitHub Secrets..."
+        cat > .env << EOF
+# Database configuration
+DB_HOST=${{ secrets.DB_HOST }}
+DB_PORT=${{ secrets.DB_PORT }}
+DB_NAME=${{ secrets.DB_NAME }}
+DB_USER=${{ secrets.DB_USER }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
-    - name: Deploy with Docker Compose
-      run: |
-        docker-compose down
-        docker-compose up -d
-        Start-Sleep -Seconds 30
-        docker-compose ps
+# Application configuration
+APP_PORT=${{ secrets.APP_PORT }}
+APP_SECRET=${{ secrets.APP_SECRET }}
+API_KEY=${{ secrets.API_KEY }}
 
-    - name: Check containers
-      run: |
-        $status = docker-compose ps --services --filter "status=running"
-        if ($status.Count -gt 0) {
-          "Containers are running: $status"
-        } else {
-          "No containers running"
-          exit 1
-        }
-
-    - name: Save artifacts
-      uses: actions/upload-artifact@v4
+# Docker configuration
+COMPOSE_PROJECT_NAME=${{ env.COMPOSE_PROJECT_NAME }}
+EOF
+        echo "☐ .env file created successfully"
+        echo "Contents (masked):"
+        cat .env | sed 's/=.*/=***/'
+    
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v0.1.6
       with:
-        name: deployment-files
-        path: .env
-        retention-days: 30
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          cd /path/to/your/app
+          
+          # Копируем .env файл на сервер
+          echo "Copying .env file to server..."
+          cat > .env << 'EOF'
+# Database configuration
+DB_HOST=${{ secrets.DB_HOST }}
+DB_PORT=${{ secrets.DB_PORT }}
+DB_NAME=${{ secrets.DB_NAME }}
+DB_USER=${{ secrets.DB_USER }}
+DB_PASSWORD=${{ secrets.DB_PASSWORD }}
 
-    - name: Save logs
-      run: |
-        docker-compose logs > logs.txt
-        docker ps -a > containers.txt
+# Application configuration
+APP_PORT=${{ secrets.APP_PORT }}
+APP_SECRET=${{ secrets.APP_SECRET }}
+API_KEY=${{ secrets.API_KEY }}
 
-    - name: Upload logs
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-logs
-        path: |
-          logs.txt
-          containers.txt
-        retention-days: 30
+# Docker configuration
+COMPOSE_PROJECT_NAME=${{ env.COMPOSE_PROJECT_NAME }}
+EOF
+          
+          git pull origin main
+          docker-compose down
+          docker-compose up -d --build
+          
+          # Проверяем подключение к БД через приложение
+          echo "Waiting for application to start..."
+          sleep 30
+          API_RESPONSE=$(curl -s http://localhost:${{ secrets.APP_PORT }}/api/data)
+          if [ $? -eq 0 ]; then
+              echo "Application database connection working"
+          else
+              echo "Application database connection failed"
+              exit 1
+          fi
