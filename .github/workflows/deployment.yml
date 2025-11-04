@@ -95,14 +95,40 @@ jobs:
         "- Date: $(Get-Date)" | Out-File test-report.md -Append
         "- Status: Success" | Out-File test-report.md -Append
 
+    - name: Debug - check files before upload
+      run: |
+        echo "Current directory: $(Get-Location)"
+        echo "Files in current directory:"
+        Get-ChildItem
+        echo "Files in project directory:"
+        Get-ChildItem "C:\Users\alber\_work\practice3\practice3\"
+        
+    - name: Copy masked file to workspace
+      run: |
+        # Копируем .env.masked в текущую рабочую директорию
+        $sourcePath = "C:\Users\alber\_work\practice3\practice3\.env.masked"
+        $destPath = ".\.env.masked"
+        if (Test-Path $sourcePath) {
+            Copy-Item $sourcePath $destPath -Force
+            echo "File copied successfully"
+        } else {
+            echo "ERROR: .env.masked not found at $sourcePath"
+            Get-ChildItem "C:\Users\alber\_work\practice3\practice3\" -Recurse | Where-Object { $_.Name -like "*.masked*" }
+        }
+
+    - name: Verify files for artifacts
+      run: |
+        echo "Files ready for upload:"
+        Get-ChildItem .env.masked, docker-compose.yml, test-report.md -ErrorAction SilentlyContinue | Format-Table Name, Length
+
     - name: Save artifacts
       uses: actions/upload-artifact@v4
       with:
         name: deployment-files
         path: |
-          C:\Users\alber\_work\practice3\practice3\.env.masked
-          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
-          C:\Users\alber\_work\practice3\practice3\test-report.md
+          .env.masked
+          docker-compose.yml
+          test-report.md
         retention-days: 30
 
     - name: Upload logs
