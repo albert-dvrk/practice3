@@ -35,12 +35,14 @@ jobs:
         Get-ChildItem .env
         echo "File content (masked):"
         Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
+
     - name: Deploy with Docker Compose
       run: |
         docker-compose down
         docker-compose up -d
         Start-Sleep -Seconds 30
         docker-compose ps
+
     - name: Check containers
       run: |
         $status = docker-compose ps --services --filter "status=running"
@@ -50,6 +52,7 @@ jobs:
           "No containers running"
           exit 1
         }
+
     - name: Test application and database
       run: |
         echo "Testing application and database connection..."
@@ -60,6 +63,7 @@ jobs:
             echo "Application database connection failed"
             exit 1
         }
+
     - name: Test data consistency
       run: |
         echo "Testing data consistency..."
@@ -75,26 +79,33 @@ jobs:
             echo "Data consistency test failed"
             exit 1
         }
-    - name: Save artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployment-files
-        path: |
-          C:\Users\alber\_work\practice3\practice3
-          test-report.md
-          deployment-logs.txt
-        retention-days: 30
+
+    - name: Wait for logs generation
+      run: |
+        Start-Sleep -Seconds 10
 
     - name: Save logs
       run: |
         docker-compose logs > logs.txt
         docker ps -a > containers.txt
         docker images > images.txt
+
     - name: Create test report
       run: |
         "# Test Report" | Out-File test-report.md
         "- Date: $(Get-Date)" | Out-File test-report.md -Append
         "- Status: Success" | Out-File test-report.md -Append
+
+    - name: Save artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-files
+        path: |
+          .env
+          docker-compose.yml
+          test-report.md
+        retention-days: 30
+
     - name: Upload logs
       uses: actions/upload-artifact@v4
       with:
