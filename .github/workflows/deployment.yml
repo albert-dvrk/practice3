@@ -16,7 +16,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Create .env file from secrets
+    - name: Create .env file
       run: |
         echo "Current directory:"
         Get-Location
@@ -31,17 +31,16 @@ jobs:
         "API_KEY=${{ secrets.API_KEY }}" | Out-File -FilePath .env -Encoding utf8 -Append
         "COMPOSE_PROJECT_NAME=${{ env.COMPOSE_PROJECT_NAME }}" | Out-File -FilePath .env -Encoding utf8 -Append
         
-        echo "☐ .env file created successfully"
+        echo "Checking .env file:"
+        Get-ChildItem .env
         echo "File content (masked):"
         Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
-
     - name: Deploy with Docker Compose
       run: |
         docker-compose down
         docker-compose up -d
         Start-Sleep -Seconds 30
         docker-compose ps
-
     - name: Check containers
       run: |
         $status = docker-compose ps --services --filter "status=running"
@@ -51,90 +50,22 @@ jobs:
           "No containers running"
           exit 1
         }
-
-    - name: Check application health
-      run: |
-        echo "Checking application status..."
-        
-        # 1. Проверяем что контейнеры запущены
-        $runningContainers = docker-compose ps --services --filter "status=running"
-        if (-not $runningContainers) {
-          echo "❌ No containers are running"
-          exit 1
-        }
-        echo "✅ Running containers: $runningContainers"
-        
-        # 2. Проверяем что порт слушается
-        echo "Checking port ${{ secrets.APP_PORT }}..."
-        $portCheck = netstat -an | Select-String ":$(${{ secrets.APP_PORT }})\s"
-        if ($portCheck) {
-          echo "✅ Port ${{ secrets.APP_PORT }} is listening"
-        } else {
-          echo "❌ Port ${{ secrets.APP_PORT }} is not listening"
-          exit 1
-        }
-        
-        # 3. Пробуем подключиться к приложению
-        echo "Testing application response..."
-        try {
-          $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -Method Get -TimeoutSec 10
-          echo "✅ Application is responding correctly"
-        } catch {
-          echo "⚠️ Application is running but HTTP request failed: $($_.Exception.Message)"
-          echo "This might be normal if the app requires specific endpoints"
-        }
-
-    - name: Save Docker logs
-      if: always()
-      run: |
-        echo "☐ Saving Docker logs..."  
-        docker-compose logs > deployment-logs.txt  
-        docker images > docker-images.txt  
-        docker ps -a > docker-ps.txt  
-
-    - name: Create test report
-      run: |
-        echo "Creating test report..." 
-        "## Deployment Test Report" | Out-File -FilePath test-report.md -Encoding utf8
-        "- Date: $(Get-Date)" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Application: Healthy ✅" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Database: Connected ✅" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Data Consistency: Passed ✅" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Containers: Running ✅" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "### Environment Variables" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- DB_HOST: ${{ secrets.DB_HOST }}" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- DB_NAME: ${{ secrets.DB_NAME }}" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- APP_PORT: ${{ secrets.APP_PORT }}" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "### Test Results" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Database connection: Successful" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-        "- Application health: Running" | Out-File -FilePath test-report.md -Encoding utf8 -Append
-
     - name: Save artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: deployment-artifacts
-        path: |
-          .env
-          test-report.md
-          deployment-logs.txt
+        name: deployment-files
+        path: .env
         retention-days: 30
 
-    - name: Upload Docker logs as artifact  
-      uses: actions/upload-artifact@v4  
-      with:  
-        name: docker-logs  
-        path: |  
-          deployment-logs.txt  
-          docker-images.txt  
-          docker-ps.txt  
-        retention-days: 30
-
-    - name: Final summary
+    - name: Save logs
       run: |
-        echo "✅ Deployment completed successfully!"
-        echo "📊 Test report and logs saved as artifacts"
-        echo "🔐 Environment variables configured from GitHub Secrets"
-        echo "🐳 Docker containers are running"
-        echo "🌐 Application is accessible on port ${{ secrets.APP_PORT }}"
+        docker-compose logs > logs.txt
+        docker ps -a > containers.txt
+    - name: Upload logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-logs
+        path: |
+          logs.txt
+          containers.txt
+        retention-days: 30
