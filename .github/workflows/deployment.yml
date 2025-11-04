@@ -90,7 +90,7 @@ jobs:
         "- Status: Success" | Out-File test-report.md -Append
     - name: Save artifacts
       run: |
-          .envmasked > .envm.txt
+          .env.masked > .envm.txt
           .env > .env.txt
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
