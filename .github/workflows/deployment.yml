@@ -82,6 +82,7 @@ jobs:
         path: |
           C:\Users\alber\_work\practice3\practice3\.env
           test-report.md
+          deployment-logs.txt
         retention-days: 30
 
     - name: Save logs
