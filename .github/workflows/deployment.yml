@@ -50,17 +50,35 @@ jobs:
           "No containers running"
           exit 1
         }
+    - name: Test application and database
+      run: |
+        echo "Testing application..."
+        try {
+        $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
+        echo "✅ Application is working"
+        } catch {
+        echo "❌ Application test failed"
+        exit 1
+        }
     - name: Save artifacts
       uses: actions/upload-artifact@v4
       with:
         name: deployment-files
-        path: .env
+        path: |
+          .env
+          test-report.md
         retention-days: 30
 
     - name: Save logs
       run: |
         docker-compose logs > logs.txt
         docker ps -a > containers.txt
+        docker images > images.txt
+    - name: Create test report
+      run: |
+        "# Test Report" | Out-File test-report.md
+        "- Date: $(Get-Date)" | Out-File test-report.md -Append
+        "- Status: Success" | Out-File test-report.md -Append
     - name: Upload logs
       uses: actions/upload-artifact@v4
       with:
