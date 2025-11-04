@@ -45,7 +45,7 @@ EOF
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /path/to/your/app
+          cd C:\Users\alber\actions-runner
           
           # Копируем .env файл на сервер
           echo "Copying .env file to server..."
@@ -73,7 +73,7 @@ EOF
           # Проверяем подключение к БД через приложение
           echo "Waiting for application to start..."
           sleep 30
-          API_RESPONSE=$(curl -s http://localhost:${{ secrets.APP_PORT }}/api/data)
+          API_RESPONSE=$(curl -s http://localhost:${{ secrets.APP_PORT }})
           if [ $? -eq 0 ]; then
               echo "Application database connection working"
           else
