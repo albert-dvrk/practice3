@@ -83,10 +83,6 @@ jobs:
             exit 1
         }
 
-    - name: Wait for logs generation
-      run: |
-        Start-Sleep -Seconds 10
-
     - name: Save logs
       run: |
         docker-compose logs > logs.txt
@@ -104,9 +100,9 @@ jobs:
       with:
         name: deployment-files
         path: |
-          .env.masked
-          docker-compose.yml
-          test-report.md
+          C:\Users\alber\_work\practice3\practice3\.env.masked
+          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
+          C:\Users\alber\_work\practice3\practice3\test-report.md
         retention-days: 30
 
     - name: Upload logs
@@ -114,6 +110,6 @@ jobs:
       with:
         name: docker-logs
         path: |
-          logs.txt
-          containers.txt
+          C:\Users\alber\_work\practice3\practice3\logs.txt
+          C:\Users\alber\_work\practice3\practice3\containers.txt
         retention-days: 30
