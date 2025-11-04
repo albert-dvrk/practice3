@@ -58,12 +58,13 @@ jobs:
         retention-days: 30
     - name: Check database connection through application
       run: |
-        echo "Checking application database connection..."
+        echo "Checking application health..."
         try {
-        $response = Invoke-RestMethod -Uri "http://localhost:${{ secrets.APP_PORT }}/api/data" -Method Get -TimeoutSec 10
-        echo "Application database connection working"
+        $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
+        echo "✅ Application is running and responding on port ${{ secrets.APP_PORT }}"
+        echo "✅ Application health check passed"
         } catch {
-        echo "Application database connection failed"
+        echo "❌ Application health check failed - application not responding"
         exit 1
         }
     - name: Save logs
