@@ -53,22 +53,11 @@ jobs:
     - name: Test application and database
       run: |
         echo "Testing application and database connection..."
-        
-        echo "Checking listening ports..."
-        netstat -an | Select-String "LISTENING" | Select-String ":8000|:3000|:8080|:5000"
-        
-        echo "Checking running containers..."
-        docker ps
-        
-        echo "Checking application logs..."
-        docker-compose logs app
-        
         try {
             $response = Invoke-WebRequest -Uri "http://localhost:8000/" -TimeoutSec 10
             echo "Application database connection working"
         } catch {
             echo "Application database connection failed"
-            echo "Error: $($_.Exception.Message)"
             exit 1
         }
     - name: Test data consistency
@@ -83,7 +72,7 @@ jobs:
             
             echo "Data consistency test passed - both services are operational"
         } catch {
-            echo "Data consistency test failed"
+            echo "❌ Data consistency test failed"
             exit 1
         }
     - name: Save artifacts
