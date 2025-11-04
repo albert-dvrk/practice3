@@ -54,7 +54,7 @@ jobs:
       run: |
         echo "Testing application and database connection..."
         try {
-            $response = Invoke-WebRequest -Uri "http://localhost:8000/" -TimeoutSec 10
+            $response = Invoke-WebRequest -Uri "http://localhost:8001/" -TimeoutSec 10
             echo "Application database connection working"
         } catch {
             echo "Application database connection failed"
@@ -72,7 +72,7 @@ jobs:
             
             echo "Data consistency test passed - both services are operational"
         } catch {
-            echo "❌ Data consistency test failed"
+            echo "Data consistency test failed"
             exit 1
         }
     - name: Save artifacts
