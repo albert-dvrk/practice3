@@ -88,19 +88,18 @@ jobs:
         "# Test Report" | Out-File test-report.md
         "- Date: $(Get-Date)" | Out-File test-report.md -Append
         "- Status: Success" | Out-File test-report.md -Append
-    - name: Save artifacts
+    - name: Save logs and masked env
       run: |
-          .env.masked > .envm.txt
-          .env > .env.txt
+            docker-compose logs > logs.txt
+            docker ps -a > containers.txt
+            docker images > images.txt
+            Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' } > env-masked.txt
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: deployment-files
         path: |
-          C:\Users\alber\_work\practice3\practice3\.env.masked
-          C:\Users\alber\_work\practice3\practice3\.env
-          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
-          C:\Users\alber\_work\practice3\practice3\test-report.md
+          C:\Users\alber\_work\practice3\practice3\env-masked.txt
         retention-days: 30
 
     - name: Upload logs
@@ -110,6 +109,4 @@ jobs:
         path: |
           C:\Users\alber\_work\practice3\practice3\logs.txt
           C:\Users\alber\_work\practice3\practice3\containers.txt
-          C:\Users\alber\_work\practice3\practice3\.env.masked
-          C:\Users\alber\_work\practice3\practice3\.env
         retention-days: 30
