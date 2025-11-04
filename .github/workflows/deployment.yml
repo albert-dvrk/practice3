@@ -33,8 +33,11 @@ jobs:
         
         echo "Checking .env file:"
         Get-ChildItem .env
+        
+        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' } | Out-File -FilePath .env.masked -Encoding utf8
+        
         echo "File content (masked):"
-        Get-Content .env | ForEach-Object { $_ -replace '=.*', '=***' }
+        Get-Content .env.masked
     - name: Deploy with Docker Compose
       run: |
         docker-compose down
@@ -75,16 +78,6 @@ jobs:
             echo "Data consistency test failed"
             exit 1
         }
-    - name: Save artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployment-files
-        path: |
-          C:\Users\alber\_work\practice3\practice3\.env.masked
-          test-report.md
-          deployment-logs.txt
-        retention-days: 30
-
     - name: Save logs
       run: |
         docker-compose logs > logs.txt
@@ -95,13 +88,28 @@ jobs:
         "# Test Report" | Out-File test-report.md
         "- Date: $(Get-Date)" | Out-File test-report.md -Append
         "- Status: Success" | Out-File test-report.md -Append
+    - name: Save artifacts
+      run: |
+          .envmasked > .envm.txt
+          .env > .env.txt
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-files
+        path: |
+          C:\Users\alber\_work\practice3\practice3\.env.masked
+          C:\Users\alber\_work\practice3\practice3\.env
+          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
+          C:\Users\alber\_work\practice3\practice3\test-report.md
+        retention-days: 30
+
     - name: Upload logs
       uses: actions/upload-artifact@v4
       with:
         name: docker-logs
         path: |
-          logs.txt
-          containers.txt
+          C:\Users\alber\_work\practice3\practice3\logs.txt
+          C:\Users\alber\_work\practice3\practice3\containers.txt
           C:\Users\alber\_work\practice3\practice3\.env.masked
           C:\Users\alber\_work\practice3\practice3\.env
         retention-days: 30
