@@ -126,9 +126,9 @@ jobs:
       with:
         name: deployment-files
         path: |
-          .env.masked
-          docker-compose.yml
-          test-report.md
+          C:\Users\alber\_work\practice3\practice3\.env.masked
+          C:\Users\alber\_work\practice3\practice3\docker-compose.yml
+          C:\Users\alber\_work\practice3\practice3\test-report.md
         retention-days: 30
 
     - name: Upload logs
