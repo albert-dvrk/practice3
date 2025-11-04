@@ -80,7 +80,7 @@ jobs:
       with:
         name: deployment-files
         path: |
-          .env
+          C:\Users\alber\_work\practice3\practice3\.env
           test-report.md
         retention-days: 30
 
