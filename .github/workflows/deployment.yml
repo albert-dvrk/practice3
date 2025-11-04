@@ -53,12 +53,26 @@ jobs:
     - name: Test application and database
       run: |
         echo "Testing application..."
+        echo "Checking port ${{ secrets.APP_PORT }}..."
+        
+        # Сначала проверяем что порт слушается
+        $portCheck = netstat -an | Select-String ":$(${{ secrets.APP_PORT }})\s"
+        if ($portCheck) {
+            echo "✅ Port ${{ secrets.APP_PORT }} is listening"
+        } else {
+            echo "❌ Port ${{ secrets.APP_PORT }} is NOT listening"
+            echo "Available ports:"
+            netstat -an | Select-String "LISTENING"
+            exit 1
+        }
+        
+        # Затем проверяем HTTP соединение
         try {
-        $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
-        echo "✅ Application is working"
+            $response = Invoke-WebRequest -Uri "http://localhost:${{ secrets.APP_PORT }}/" -TimeoutSec 10
+            echo "✅ Application is working"
         } catch {
-        echo "❌ Application test failed"
-        exit 1
+            echo "❌ Application test failed: $($_.Exception.Message)"
+            exit 1
         }
     - name: Save artifacts
       uses: actions/upload-artifact@v4
